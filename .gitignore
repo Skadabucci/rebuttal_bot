@@ -105,3 +105,7 @@ venv.bak/
 
 # praw
 praw.ini
+
+# rebuttal_bot specifics
+rebuttals/*.json
+submissions/*.json
