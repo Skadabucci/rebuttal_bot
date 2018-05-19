@@ -55,6 +55,7 @@ def detect_rebuttal(comment):
             break
     return rebuttals
 
+
 def process_submissions(submissions):
     rebuttal_tree = {}
     for i, submission in enumerate(submissions):
