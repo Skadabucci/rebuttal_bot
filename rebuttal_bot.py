@@ -9,8 +9,21 @@ SUBMISSON_LIMIT = 1000
 DETECTION_MISSES = 3
 
 
+def reply_to_rebuttal():
+    return 'Nice rebuttal! [More information](https://github.com/Boomerkuwanger/rebuttal_bot/blob/master/README.md)'
+
+
+def scalar_function(x):
+    if x < 100:
+        return 500
+    elif x < REBUTTAL_THRESHOLD:
+        return x * (32.27/(x ** .397))
+    else:
+        return x * (4/(x ** .1))
+
+
 def format_comment(comment):
-    return f' Comment ({comment.id}): Score: {comment.score} --- Permalink: {comment.permalink} --- Body: {comment.body}\n',
+    return f' Comment ({comment.id}): Score: {comment.score}\n   Permalink: {comment.permalink}\n   Body: {comment.body}\n',
 
 
 def print_rebuttal(comment, reply):
@@ -48,9 +61,10 @@ def detect_rebuttal(comment):
     rebuttals = []
     replies = comment.replies
     for reply in replies:
-        if reply.score > comment.score + REBUTTAL_THRESHOLD:
+        if reply.score >= scalar_function(comment.score):
             print_rebuttal(comment, reply)
             rebuttals.append(reply)
+            reply.reply(reply_to_rebuttal())
         else:
             break
     return rebuttals
@@ -70,10 +84,10 @@ def process_submissions(submissions):
         rebuttal_tree[submission] = {}
         for comment in comments:
             # print(f'Comment Score: {comment.score}')
-            if comment.score_hidden or comment.score < REBUTTAL_THRESHOLD:
-                detection_misses += 1
-            if detection_misses > DETECTION_MISSES:
-                break
+            # if comment.score_hidden or comment.score < REBUTTAL_THRESHOLD:
+            #     detection_misses += 1
+            # if detection_misses > DETECTION_MISSES:
+            #     break
             results = detect_rebuttal(comment)
             rebuttal_tree[submission][comment] = results
         end = time.time()
