@@ -4,19 +4,35 @@ import praw
 import time
 
 
-REBUTTAL_THRESHOLD = 1000
-SUBMISSON_LIMIT = 1000
+SUBMISSON_LIMIT = 500
 DETECTION_MISSES = 3
 
 
-def reply_to_rebuttal():
-    return 'Nice rebuttal! [More information](https://github.com/Boomerkuwanger/rebuttal_bot/blob/master/README.md)'
+def reply_to_comment(comment):
+    text = 'Nice rebuttal! [More information](https://github.com/Boomerkuwanger/rebuttal_bot/blob/master/README.md)'
+    comment.reply(text)
+
+
+def reply_to_rebuttals(rebuttal_tree):
+    print('-' * 12, 'Replying to rebuttals', '-' * 12)
+    for submission, comments in rebuttal_tree.items():            
+        for comment, replies in comments.items():
+            for reply in replies:
+                replied = False
+                while not replied:
+                    try:
+                        reply_to_comment(reply)
+                        print(f'Replied to rebuttal from comment: https://reddit.com{comment.permalink}')
+                        replied = True
+                        time.sleep(60 * 10)
+                    except praw.exceptions.APIException:
+                        time.sleep(60 * 1)
 
 
 def scalar_function(x):
     if x < 100:
         return 500
-    elif x < REBUTTAL_THRESHOLD:
+    elif x < 1000:
         return x * (32.27/(x ** .397))
     else:
         return x * (4/(x ** .1))
@@ -64,7 +80,6 @@ def detect_rebuttal(comment):
         if reply.score >= scalar_function(comment.score):
             print_rebuttal(comment, reply)
             rebuttals.append(reply)
-            reply.reply(reply_to_rebuttal())
         else:
             break
     return rebuttals
@@ -73,43 +88,37 @@ def detect_rebuttal(comment):
 def process_submissions(submissions):
     rebuttal_tree = {}
     for i, submission in enumerate(submissions):
+        print('-' * 40, '\n', f'{i}:: ID: {submission.id} Title: {submission.title}')
+
         submission.comment_sort = 'top'
-        start = time.time()
-        detection_misses = 0
-        print('-' * 40, '\n', f"{i}:: ID: {submission.id} Title: {submission.title}")
-        comments = submission.comments
-        more_comments_start = time.time()
-        comments.replace_more(limit=0)
-        more_comments_end = time.time()
         rebuttal_tree[submission] = {}
+        start = time.time()
+        comments = submission.comments
+
+        comments.replace_more(limit=0)
         for comment in comments:
-            # print(f'Comment Score: {comment.score}')
-            # if comment.score_hidden or comment.score < REBUTTAL_THRESHOLD:
-            #     detection_misses += 1
-            # if detection_misses > DETECTION_MISSES:
-            #     break
             results = detect_rebuttal(comment)
             rebuttal_tree[submission][comment] = results
-        end = time.time()
-        print(f'Elapsed: {end - start} -- More Comments: {more_comments_end - more_comments_start}')
+
+        print('-' * 12, f'Elapsed: {time.time() - start}', '-' * 12)
     return rebuttal_tree
 
 
 def main():
     reddit = praw.Reddit('rebuttal-bot')
     r_all = reddit.subreddit('all')
-    # process_submissions(r_all.hot(limit=10))
     tree = process_submissions(r_all.top(time_filter='day', limit=SUBMISSON_LIMIT))
-    # print_rebuttal_tree(tree)
     submissions = [submission.permalink for submission in tree.keys()]
     permalink_tree = make_permalink_tree(tree)
     run_time = time.strftime("%Y%m%d-%H%M%S")
-    if permalink_tree:
-        with open(f'rebuttals/rebuttal_{run_time}.json', 'w+') as f:
-            f.write(json.dumps(permalink_tree))
+
+    with open(f'rebuttals/rebuttal_{run_time}.json', 'w+') as f:
+        f.write(json.dumps(permalink_tree))
+
     with open(f'submissions/submission_{run_time}.json', 'w+') as f:
         f.write(json.dumps(submissions))
 
+    reply_to_rebuttals(tree)
 
 if __name__ == '__main__':
     main()

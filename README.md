@@ -14,9 +14,9 @@ If a user comments "Hello" with a score of 1000 and someone replies "There" with
 
 ## Future / Backlog
 * Tests
+* Implement ASYNCIO!!!
 * Web API/DB for storing rebuttals and a dashboard that contains a leaderboard
 * Web Servers to run this bot
-* Multiprocessing
 * Optimization
 
 ## Requirements
