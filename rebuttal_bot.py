@@ -2,9 +2,9 @@ import json
 import os
 import praw
 import time
+import traceback
 
-
-SUBMISSON_LIMIT = 500
+SUBMISSON_LIMIT = 1000
 DETECTION_MISSES = 3
 
 
@@ -24,9 +24,14 @@ def reply_to_rebuttals(rebuttal_tree):
                         reply_to_comment(reply)
                         print(f'Replied to rebuttal from comment: https://reddit.com{comment.permalink}')
                         replied = True
-                        time.sleep(60 * 10)
-                    except praw.exceptions.APIException:
-                        time.sleep(60 * 1)
+                        time.sleep(60 * 5)
+                    except praw.exceptions.APIException as e:
+                        if 'RATELIMIT' in str(e):
+                            time.sleep(60 * 1)
+                        else:
+                            traceback.print_exc()
+                            print(f'Failed to reply to https://reddit.com{comment.permalink}')
+                            break
 
 
 def scalar_function(x):
@@ -89,7 +94,6 @@ def process_submissions(submissions):
     rebuttal_tree = {}
     for i, submission in enumerate(submissions):
         print('-' * 40, '\n', f'{i}:: ID: {submission.id} Title: {submission.title}')
-
         submission.comment_sort = 'top'
         rebuttal_tree[submission] = {}
         start = time.time()
